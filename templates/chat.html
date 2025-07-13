@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>SoulSync - Mental Health Chat</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root {
+      --bg-color: #f4f7fc;
+      --text-color: #000;
+      --user-bg: #d1e8ff;
+      --bot-bg: #e6f3ec;
+      --header-bg: #6a93ff;
+      --input-bg: #f0f0f0;
+      --button-bg: #6a93ff;
+      --button-hover: #4a75e8;
+    }
+
+    body.dark-mode {
+      --bg-color: #121212;
+      --text-color: #f1f1f1;
+      --user-bg: #2a7de1;
+      --bot-bg: #2e7d6b;
+      --header-bg: #2a2a2a;
+      --input-bg: #1f1f1f;
+      --button-bg: #3f51b5;
+      --button-hover: #5c6bc0;
+    }
+
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      margin: 0;
+      padding: 0;
+      display: flex;
+      height: 100vh;
+      align-items: center;
+      justify-content: center;
+      transition: background-color 0.3s, color 0.3s;
+    }
+
+    .chat-container {
+      width: 95%;
+      max-width: 500px;
+      height: 90vh;
+      background-color: var(--bg-color);
+      display: flex;
+      flex-direction: column;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      overflow: hidden;
+    }
+
+    h2 {
+      background-color: var(--header-bg);
+      color: white;
+      margin: 0;
+      padding: 15px;
+      text-align: center;
+      position: relative;
+    }
+
+    .dark-toggle {
+      position: absolute;
+      top: 15px;
+      right: 15px;
+      color: white;
+      font-size: 12px;
+      text-align: center;
+    }
+
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 50px;
+      height: 24px;
+    }
+
+    .switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: #ccc;
+      transition: .4s;
+      border-radius: 24px;
+    }
+
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 18px;
+      width: 18px;
+      left: 3px;
+      bottom: 3px;
+      background-color: white;
+      transition: .4s;
+      border-radius: 50%;
+    }
+
+    input:checked + .slider {
+      background-color: #6a93ff;
+    }
+
+    input:checked + .slider:before {
+      transform: translateX(26px);
+    }
+
+    #chat-box {
+      flex: 1;
+      padding: 15px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .user-message, .bot-message {
+      padding: 10px 15px;
+      border-radius: 20px;
+      max-width: 75%;
+      word-wrap: break-word;
+    }
+
+    .user-message {
+      align-self: flex-end;
+      background-color: var(--user-bg);
+    }
+
+    .bot-message {
+      align-self: flex-start;
+      background-color: var(--bot-bg);
+    }
+
+    .input-area {
+      display: flex;
+      align-items: center;
+      padding: 10px;
+      border-top: 1px solid #ccc;
+      background-color: var(--bg-color);
+      gap: 8px;
+    }
+
+    #user-input {
+      flex: 1;
+      padding: 10px 15px;
+      border: none;
+      border-radius: 20px;
+      font-size: 16px;
+      background-color: var(--input-bg);
+      color: var(--text-color);
+      outline: none;
+    }
+
+    button {
+      padding: 10px 16px;
+      background-color: var(--button-bg);
+      color: white;
+      border: none;
+      border-radius: 20px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: var(--button-hover);
+    }
+
+    .mic-btn {
+      font-size: 18px;
+      background-color: var(--button-bg);
+      border: none;
+      color: white;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      cursor: pointer;
+    }
+
+    .response-mode-toggle {
+      padding: 10px 20px;
+      background-color: var(--bg-color);
+      text-align: center;
+      border-top: 1px solid #ccc;
+      font-size: 14px;
+      color: var(--text-color);
+    }
+
+    .mode-buttons {
+      margin-top: 6px;
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+    }
+
+    .mode-btn {
+      padding: 8px 18px;
+      font-size: 14px;
+      border: 1px solid var(--button-bg);
+      background-color: transparent;
+      border-radius: 20px;
+      color: var(--text-color);
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .mode-btn.active {
+      background-color: var(--button-bg);
+      color: white;
+    }
+  </style>
+</head>
+<body>
+  <div class="chat-container">
+    <h2>
+      🧠 SoulSync
+      <div class="dark-toggle">
+        <div>Dark Mode</div>
+        <label class="switch">
+          <input type="checkbox" id="mode-toggle">
+          <span class="slider"></span>
+        </label>
+      </div>
+    </h2>
+
+    <div id="chat-box">
+      <div class="bot-message">Hello, I'm SoulSync. How are you feeling today?</div>
+    </div>
+
+    <div class="input-area">
+      <button class="mic-btn" onclick="startListening()">🎤</button>
+      <input type="text" id="user-input" placeholder="Type your thoughts..." autofocus>
+      <button onclick="sendMessage()">Send</button>
+    </div>
+
+    <div class="response-mode-toggle">
+      <span>Model Reply Mode:</span>
+      <div class="mode-buttons">
+        <button id="text-mode-btn" class="mode-btn active">💬 Text</button>
+        <button id="voice-mode-btn" class="mode-btn">🗣️ Voice</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const chatBox = document.getElementById("chat-box");
+    let replyMode = "text";
+
+    async function sendMessage() {
+      const input = document.getElementById("user-input");
+      const message = input.value.trim();
+      if (!message) return;
+
+      chatBox.innerHTML += `<div class="user-message">${message}</div>`;
+      input.value = "";
+      chatBox.scrollTop = chatBox.scrollHeight;
+
+      const response = await fetch("/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message })
+      });
+
+      const data = await response.json();
+      chatBox.innerHTML += `<div class="bot-message">${data.reply}</div>`;
+      chatBox.scrollTop = chatBox.scrollHeight;
+
+      if (replyMode === "voice") {
+        const utterance = new SpeechSynthesisUtterance(data.reply);
+        speechSynthesis.speak(utterance);
+      }
+    }
+
+    document.getElementById("user-input").addEventListener("keypress", function (e) {
+      if (e.key === "Enter") sendMessage();
+    });
+
+    document.getElementById("mode-toggle").addEventListener("change", function () {
+      document.body.classList.toggle("dark-mode");
+    });
+
+    document.getElementById("text-mode-btn").addEventListener("click", () => {
+      replyMode = "text";
+      document.getElementById("text-mode-btn").classList.add("active");
+      document.getElementById("voice-mode-btn").classList.remove("active");
+    });
+
+    document.getElementById("voice-mode-btn").addEventListener("click", () => {
+      replyMode = "voice";
+      document.getElementById("voice-mode-btn").classList.add("active");
+      document.getElementById("text-mode-btn").classList.remove("active");
+    });
+
+    function startListening() {
+      if (!('webkitSpeechRecognition' in window)) {
+        alert("Speech recognition not supported in this browser.");
+        return;
+      }
+
+      const recognition = new webkitSpeechRecognition();
+      recognition.lang = "en-US";
+      recognition.interimResults = false;
+      recognition.maxAlternatives = 1;
+
+      recognition.onresult = function (event) {
+        const voiceText = event.results[0][0].transcript;
+        document.getElementById("user-input").value = voiceText;
+        sendMessage();
+      };
+
+      recognition.onerror = function (event) {
+        alert("Voice recognition error: " + event.error);
+      };
+
+      recognition.start();
+    }
+  </script>
+</body>
+</html>
