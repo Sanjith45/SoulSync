@@ -1,0 +1,101 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Sign Up - SoulSync</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(to right, #e1f5fe, #fce4ec);
+            font-family: 'Segoe UI', sans-serif;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+        }
+
+        .signup-container {
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            animation: slideIn 1s ease-in-out;
+            width: 90%;
+            max-width: 450px;
+        }
+
+        h2 {
+            text-align: center;
+            color: #4a148c;
+            margin-bottom: 20px;
+        }
+
+        input[type="text"], input[type="password"], input[type="date"] {
+            width: 100%;
+            padding: 12px 15px;
+            margin: 10px 0;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            background: #f9f9f9;
+            transition: 0.3s;
+        }
+
+        input:focus {
+            border-color: #ab47bc;
+            background: #fff;
+        }
+
+        button {
+            width: 100%;
+            padding: 12px;
+            background: #ab47bc;
+            color: white;
+            font-weight: bold;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            margin-top: 20px;
+            transition: background 0.3s;
+        }
+
+        button:hover {
+            background: #8e24aa;
+        }
+
+        .link {
+            margin-top: 20px;
+            text-align: center;
+        }
+
+        .link a {
+            color: #ab47bc;
+            text-decoration: none;
+        }
+
+        .link a:hover {
+            text-decoration: underline;
+        }
+
+        @keyframes slideIn {
+            0% { opacity: 0; transform: translateY(-30px); }
+            100% { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+    <form method="POST" class="signup-container">
+        <h2>Join SoulSync 🌱</h2>
+        <input type="text" name="name" placeholder="Your Full Name" required>
+        <input type="date" name="dob" placeholder="Date of Birth" required>
+        <input type="text" name="nickname" placeholder="Nickname" required>
+        <input type="password" name="password" placeholder="Create Password" required>
+        <button type="submit">Sign Up</button>
+        <div class="link">
+            Already a member? <a href="/login">Login</a>
+        </div>
+    </form>
+</body>
+</html>
