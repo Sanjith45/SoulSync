@@ -254,6 +254,24 @@
     const chatBox = document.getElementById("chat-box");
     let replyMode = "text";
 
+    // 🔹 Sentiment popup helper
+    function showSentimentPopup(sentiment) {
+      const popup = document.createElement("div");
+      popup.textContent = `🧠 Detected Emotion: ${sentiment}`;
+      popup.style.position = "fixed";
+      popup.style.bottom = "20px";
+      popup.style.right = "20px";
+      popup.style.background = "#333";
+      popup.style.color = "#fff";
+      popup.style.padding = "10px 15px";
+      popup.style.borderRadius = "8px";
+      popup.style.boxShadow = "0 4px 12px rgba(0,0,0,0.3)";
+      popup.style.zIndex = "9999";
+      document.body.appendChild(popup);
+      setTimeout(() => popup.remove(), 4000); // auto-hide after 4s
+    }
+
+    // 🔹 Main send message flow
     async function sendMessage() {
       const input = document.getElementById("user-input");
       const message = input.value.trim();
@@ -273,20 +291,28 @@
       chatBox.innerHTML += `<div class="bot-message">${data.reply}</div>`;
       chatBox.scrollTop = chatBox.scrollHeight;
 
+      // 🔹 Show sentiment popup
+      if (data.sentiment) {
+        showSentimentPopup(data.sentiment);
+      }
+
       if (replyMode === "voice") {
         const utterance = new SpeechSynthesisUtterance(data.reply);
         speechSynthesis.speak(utterance);
       }
     }
 
+    // 🔹 Enter key shortcut
     document.getElementById("user-input").addEventListener("keypress", function (e) {
       if (e.key === "Enter") sendMessage();
     });
 
+    // 🔹 Dark mode toggle
     document.getElementById("mode-toggle").addEventListener("change", function () {
       document.body.classList.toggle("dark-mode");
     });
 
+    // 🔹 Reply mode toggle
     document.getElementById("text-mode-btn").addEventListener("click", () => {
       replyMode = "text";
       document.getElementById("text-mode-btn").classList.add("active");
@@ -299,6 +325,7 @@
       document.getElementById("text-mode-btn").classList.remove("active");
     });
 
+    // 🔹 Voice input
     function startListening() {
       if (!('webkitSpeechRecognition' in window)) {
         alert("Speech recognition not supported in this browser.");

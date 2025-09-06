@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Relaxation Finder — OpenStreetMap</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <style>
+    :root {
+      --bg: #0b1220;
+      --card: #121a2b;
+      --muted: #8aa0c6;
+      --accent: #6ae3ff;
+      --chip: #1c2740;
+      --chip-on: #2b395a;
+      --btn: #1f2a44;
+      --btn-on: #2a3a5f;
+      --white: #eaf2ff;
+      --good: #69db7c;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      background: radial-gradient(1200px 600px at 20% -5%, #12203a 0%, var(--bg) 60%);
+      color: var(--white);
+    }
+    header {
+      padding: 20px 24px; position: sticky; top: 0; z-index: 10;
+      backdrop-filter: blur(6px);
+      background: linear-gradient(180deg, rgba(11,18,32,0.95), rgba(11,18,32,0.75));
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+    }
+    h1 { margin: 0 0 10px; font-weight: 700; letter-spacing: 0.2px; }
+    .controls {
+      display: grid; grid-template-columns: 1fr auto auto; gap: 10px; align-items: center;
+      max-width: 1100px;
+    }
+    .search-wrap { position: relative; }
+    #search {
+      width: 100%; padding: 12px 14px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1);
+      background: var(--card); color: var(--white); outline: none; font-size: 14px;
+    }
+    .suggestions {
+      position: absolute; top: calc(100% + 6px); left: 0; right: 0;
+      background: var(--card); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; overflow: hidden;
+      max-height: 280px; overflow-y: auto; box-shadow: 0 6px 24px rgba(0,0,0,0.35);
+    }
+    .suggestions div {
+      padding: 10px 12px; cursor: pointer; font-size: 14px; color: var(--white);
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+    }
+    .suggestions div:hover { background: #0f1a30; }
+
+    button, .chip {
+      border: 1px solid rgba(255,255,255,0.08);
+      background: var(--btn); color: var(--white);
+      padding: 10px 12px; border-radius: 12px; cursor: pointer; font-weight: 600;
+    }
+    button:hover { background: var(--btn-on); }
+    .muted { color: var(--muted); font-size: 13px; }
+    .row { display: grid; grid-template-columns: 1fr 380px; gap: 14px; padding: 14px; max-width: 1200px; margin: 0 auto; }
+    #map { height: 520px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.08); }
+    .side {
+      max-height: 520px; overflow: auto; padding: 6px; background: var(--card);
+      border: 1px solid rgba(255,255,255,0.08); border-radius: 16px;
+    }
+    .filters {
+      display: flex; flex-wrap: wrap; gap: 8px; padding: 10px 10px 0 10px; position: sticky; top: 0; background: var(--card); z-index: 5;
+    }
+    .chip { background: var(--chip); }
+    .chip.active { background: var(--chip-on); border-color: rgba(255,255,255,0.15); }
+    .list { padding: 10px; }
+    .cat-title { margin: 14px 0 8px; font-size: 13px; letter-spacing: 0.8px; color: var(--muted); text-transform: uppercase; }
+    .card {
+      background: #0f1730; border: 1px solid rgba(255,255,255,0.06); border-radius: 14px;
+      padding: 12px; margin: 10px 0; display: grid; grid-template-columns: 1fr auto; gap: 6px;
+      transition: transform .12s ease, box-shadow .12s ease;
+    }
+    .card:hover { transform: translateY(-1px); box-shadow: 0 8px 20px rgba(0,0,0,0.35); }
+    .title { font-weight: 700; font-size: 15px; }
+    .meta { font-size: 13px; color: var(--muted); }
+    .badge { font-size: 12px; padding: 6px 8px; border-radius: 999px; background: rgba(106,227,255,0.08); border: 1px solid rgba(106,227,255,0.25); }
+    .actions { display: flex; gap: 8px; align-items: center; }
+    .link { text-decoration: none; color: var(--accent); font-weight: 600; }
+    .distance { color: var(--good); font-weight: 700; }
+    .spacer { height: 6px; }
+    .footer-note { padding: 8px 0 16px 10px; }
+    @media (max-width: 1024px) {
+      .row { grid-template-columns: 1fr; }
+      #map { height: 420px; }
+      .side { max-height: unset; }
+      .controls { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Relaxation Finder</h1>
+    <div class="controls">
+      <div class="search-wrap">
+        <input id="search" placeholder="Search a place or area (e.g., Gandhipuram, Coimbatore)" />
+        <div id="suggestions" class="suggestions" style="display:none;"></div>
+      </div>
+      <button id="useMyLocation">📍 Use My Location</button>
+      <div class="muted">Tip: choose a place → we’ll list nearby relaxing spots with distance.</div>
+    </div>
+  </header>
+
+  <main class="row">
+    <div id="map"></div>
+
+    <aside class="side">
+      <div class="filters" id="filters"></div>
+      <div class="list" id="list"></div>
+      <div class="footer-note muted">Data: © OpenStreetMap contributors. Be respectful with requests.</div>
+    </aside>
+  </main>
+
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <script>
+    // ---- Map setup ----
+    let map = L.map('map').setView([20.5937, 78.9629], 5); // India default
+    const tiles = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© OpenStreetMap contributors'
+    }).addTo(map);
+    const markers = L.layerGroup().addTo(map);
+    let centerMarker = null;
+
+    let allResults = [];        // flat list from backend
+    let grouped = {};           // grouped by category
+    let activeCategory = "All"; // filter
+    let categoryOrder = ["Meditation / Worship", "Spas", "Parks", "Arts & Theatre", "Cinema", "Music Venues", "Museums & Galleries", "Community Centres", "Other"];
+    const categoryEmoji = JSON.parse('{{ category_emoji | tojson | safe }}');
+
+    // ---- Search Autocomplete (Nominatim) ----
+    const search = document.getElementById('search');
+    const suggestions = document.getElementById('suggestions');
+    let debounceTimer = null;
+
+    function showSuggestions(items) {
+      suggestions.innerHTML = "";
+      if (!items.length) { suggestions.style.display = 'none'; return; }
+      items.forEach(p => {
+        const div = document.createElement('div');
+        div.textContent = p.display_name;
+        div.onclick = () => {
+          suggestions.style.display = 'none';
+          search.value = p.display_name;
+          goNearby(parseFloat(p.lat), parseFloat(p.lon));
+        };
+        suggestions.appendChild(div);
+      });
+      suggestions.style.display = 'block';
+    }
+
+    search.addEventListener('input', () => {
+      const q = search.value.trim();
+      if (q.length < 3) { suggestions.style.display = 'none'; return; }
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => {
+        fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&addressdetails=0&limit=8`)
+          .then(r => r.json())
+          .then(showSuggestions)
+          .catch(() => (suggestions.style.display = 'none'));
+      }, 250);
+    });
+
+    document.addEventListener('click', (e) => {
+      if (!document.querySelector('.search-wrap').contains(e.target)) {
+        suggestions.style.display = 'none';
+      }
+    });
+
+    // ---- Use My Location ----
+    document.getElementById('useMyLocation').addEventListener('click', () => {
+      if (!navigator.geolocation) return alert("Geolocation not supported.");
+      navigator.geolocation.getCurrentPosition(pos => {
+        goNearby(pos.coords.latitude, pos.coords.longitude);
+      }, () => alert("Couldn't get your location."));
+    });
+
+    // ---- Fetch nearby + render ----
+    function goNearby(lat, lng) {
+      // center point marker
+      if (centerMarker) markers.removeLayer(centerMarker);
+      centerMarker = L.marker([lat, lng], {title: "Selected Center"}).addTo(markers).bindPopup("<b>Selected Location</b>").openPopup();
+      map.setView([lat, lng], 14);
+
+      fetch("/nearby", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({lat, lng, radius_m: 5000})
+      })
+      .then(r => r.json())
+      .then(data => {
+        allResults = data.all;
+        grouped = data.categories;
+        renderFilters();
+        renderList();
+        renderMarkers();
+      })
+      .catch(() => alert("Failed to fetch nearby places. Try again."));
+    }
+
+    // ---- Filters UI ----
+    function renderFilters() {
+      const filters = document.getElementById('filters');
+      filters.innerHTML = "";
+
+      const allChip = document.createElement('button');
+      allChip.className = 'chip' + (activeCategory === "All" ? ' active' : '');
+      allChip.textContent = "All";
+      allChip.onclick = () => { activeCategory = "All"; renderList(); renderMarkers(); };
+      filters.appendChild(allChip);
+
+      const cats = Object.keys(grouped).sort((a, b) => {
+        const ai = categoryOrder.indexOf(a); const bi = categoryOrder.indexOf(b);
+        return (ai === -1 ? 99 : ai) - (bi === -1 ? 99 : bi);
+      });
+
+      cats.forEach(cat => {
+        const chip = document.createElement('button');
+        chip.className = 'chip' + (activeCategory === cat ? ' active' : '');
+        const emoji = categoryEmoji[cat] || "⭐";
+        chip.textContent = `${emoji} ${cat}`;
+        chip.onclick = () => { activeCategory = cat; renderList(); renderMarkers(); };
+        filters.appendChild(chip);
+      });
+    }
+
+    // ---- List UI ----
+    function renderList() {
+      const list = document.getElementById('list');
+      list.innerHTML = "";
+
+      const renderCategoryBlock = (catName, items) => {
+        if (!items || !items.length) return;
+        const title = document.createElement('div');
+        title.className = 'cat-title';
+        const emoji = categoryEmoji[catName] || "⭐";
+        title.textContent = `${emoji} ${catName}`;
+        list.appendChild(title);
+
+        items.forEach((p, idx) => {
+          const card = document.createElement('div');
+          card.className = 'card';
+          card.dataset.lat = p.lat;
+          card.dataset.lng = p.lng;
+
+          const left = document.createElement('div');
+          left.innerHTML = `
+            <div class="title">${p.name}</div>
+            <div class="meta">
+              ${p.category} • <span class="distance">${p.distance_km} km</span>
+            </div>
+          `;
+
+          const right = document.createElement('div');
+          right.className = 'actions';
+          const btnCenter = document.createElement('button');
+          btnCenter.textContent = "Show on Map";
+          btnCenter.onclick = () => focusOn(p.lat, p.lng, p.name);
+
+          const link = document.createElement('a');
+          link.href = p.osm_link; link.target = "_blank"; link.className = 'link';
+          link.textContent = "Open in OSM";
+
+          right.appendChild(btnCenter);
+          right.appendChild(link);
+
+          card.appendChild(left);
+          card.appendChild(right);
+
+          // Clicking the card also focuses map
+          card.addEventListener('click', (e) => {
+            if (e.target.tagName.toLowerCase() === 'a' || e.target.tagName.toLowerCase() === 'button') return;
+            focusOn(p.lat, p.lng, p.name);
+          });
+
+          list.appendChild(card);
+          list.appendChild(document.createElement('div')).className = 'spacer';
+        });
+      };
+
+      if (activeCategory === "All") {
+        // Render in ordered categories first, then any remaining
+        const catsOrdered = Array.from(new Set([
+          ...categoryOrder.filter(c => grouped[c]),
+          ...Object.keys(grouped)
+        ]));
+        catsOrdered.forEach(cat => renderCategoryBlock(cat, grouped[cat]));
+      } else {
+        renderCategoryBlock(activeCategory, grouped[activeCategory]);
+      }
+    }
+
+    // ---- Markers ----
+    let resultMarkers = [];
+    function clearResultMarkers() {
+      resultMarkers.forEach(m => markers.removeLayer(m));
+      resultMarkers = [];
+    }
+
+    function renderMarkers() {
+      clearResultMarkers();
+      const items = (activeCategory === "All")
+        ? allResults
+        : (grouped[activeCategory] || []);
+
+      const bounds = [];
+      items.forEach(p => {
+        const m = L.marker([p.lat, p.lng], {title: p.name})
+          .addTo(markers)
+          .bindPopup(`<b>${p.name}</b><br>${p.category}<br><span style="color:#69db7c;font-weight:700;">${p.distance_km} km</span>`);
+        m.on('click', () => highlightCard(p.lat, p.lng));
+        resultMarkers.push(m);
+        bounds.push([p.lat, p.lng]);
+      });
+
+      if (bounds.length) {
+        const b = L.latLngBounds(bounds);
+        try { map.fitBounds(b.pad(0.2)); } catch (e) {}
+      }
+    }
+
+    function focusOn(lat, lng, name = "") {
+      map.setView([lat, lng], 17, { animate: true });
+      // open popup if marker exists
+      let found = resultMarkers.find(m => {
+        const ll = m.getLatLng();
+        return Math.abs(ll.lat - lat) < 1e-8 && Math.abs(ll.lng - lng) < 1e-8;
+      });
+      if (found) found.openPopup();
+      highlightCard(lat, lng);
+    }
+
+    function highlightCard(lat, lng) {
+      const list = document.getElementById('list');
+      const cards = Array.from(list.querySelectorAll('.card'));
+      let target = cards.find(c => Math.abs(parseFloat(c.dataset.lat) - lat) < 1e-8 &&
+                                   Math.abs(parseFloat(c.dataset.lng) - lng) < 1e-8);
+      if (target) {
+        target.style.outline = "2px solid rgba(106,227,255,0.6)";
+        target.style.boxShadow = "0 0 0 4px rgba(106,227,255,0.15)";
+        target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        setTimeout(() => {
+          target.style.outline = ""; target.style.boxShadow = "";
+        }, 1200);
+      }
+    }
+
+    // Optional: start near user's location automatically if permission granted
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(pos => {
+        goNearby(pos.coords.latitude, pos.coords.longitude);
+      });
+    }
+  </script>
+</body>
+</html>

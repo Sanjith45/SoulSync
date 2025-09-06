@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Relaxation Finder</title>
+    <style>
+        body { font-family: Arial; padding: 20px; background: #f8f8f8; }
+        input { width: 300px; padding: 8px; }
+        button { padding: 8px; margin-left: 5px; }
+        #suggestions div { cursor: pointer; padding: 5px; border: 1px solid #ccc; background: white; }
+        #suggestions div:hover { background: #eee; }
+        .card {
+            background: white;
+            margin: 10px 0;
+            padding: 10px;
+            display: flex;
+            border-radius: 8px;
+            box-shadow: 0px 2px 6px rgba(0,0,0,0.1);
+        }
+        .card img { width: 120px; height: 80px; object-fit: cover; border-radius: 6px; }
+        .card-content { padding-left: 10px; }
+        .card-content h3 { margin: 0 0 5px; }
+    </style>
+</head>
+<body>
+    <h1>Find Relaxation Spots</h1>
+    <input id="location-input" type="text" placeholder="Enter location">
+    <button onclick="getCurrentLocation()">📍 Use My Location</button>
+    <div id="suggestions"></div>
+
+    <div id="results"></div>
+
+    <script>
+        const input = document.getElementById("location-input");
+        const suggestionsBox = document.getElementById("suggestions");
+        const resultsBox = document.getElementById("results");
+
+        input.addEventListener("input", () => {
+            let query = input.value;
+            if (query.length < 3) return;
+            fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${query}`)
+                .then(res => res.json())
+                .then(data => {
+                    suggestionsBox.innerHTML = "";
+                    data.forEach(place => {
+                        let div = document.createElement("div");
+                        div.textContent = place.display_name;
+                        div.onclick = () => {
+                            suggestionsBox.innerHTML = "";
+                            input.value = place.display_name;
+                            fetchNearby(place.lat, place.lon);
+                        };
+                        suggestionsBox.appendChild(div);
+                    });
+                });
+        });
+
+        function getCurrentLocation() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(pos => {
+                    fetchNearby(pos.coords.latitude, pos.coords.longitude);
+                });
+            }
+        }
+
+        function fetchNearby(lat, lng) {
+            fetch("/nearby", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ lat, lng })
+            })
+            .then(res => res.json())
+            .then(data => {
+                resultsBox.innerHTML = "";
+                if (!data.length) {
+                    resultsBox.innerHTML = "<p>No places found.</p>";
+                    return;
+                }
+                data.forEach(place => {
+                    let card = document.createElement("div");
+                    card.className = "card";
+                    card.innerHTML = `
+                        <img src="${place.image}">
+                        <div class="card-content">
+                            <h3>${place.name}</h3>
+                            <p>${place.description}</p>
+                        </div>
+                    `;
+                    resultsBox.appendChild(card);
+                });
+            });
+        }
+    </script>
+</body>
+</html>

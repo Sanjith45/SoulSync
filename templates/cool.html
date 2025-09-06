@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Nearby Self-Care Spots</title>
+</head>
+<body>
+    <h1>🌱 Find Self-Care Events Near You</h1>
+    <button onclick="getLocation()">Find My Location</button>
+    <div id="results">Searching...</div>
+
+    <script>
+    function getLocation() {
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(sendLocation, showError);
+        } else {
+            document.getElementById("results").innerHTML = "Geolocation not supported.";
+        }
+    }
+
+    function sendLocation(position) {
+        fetch("/find_events", {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({
+                latitude: position.coords.latitude,
+                longitude: position.coords.longitude
+            })
+        })
+        .then(res => res.json())
+        .then(data => {
+            let html = "";
+            if (data.length > 0) {
+                data.forEach(e => {
+                    html += `<p><a href="${e.url}" target="_blank">${e.name}</a> — ${e.start}</p>`;
+                });
+            } else {
+                html = "<p>No events found nearby.</p>";
+            }
+            document.getElementById("results").innerHTML = html;
+        });
+    }
+
+    function showError(error) {
+        document.getElementById("results").innerHTML = "Error getting location.";
+    }
+    </script>
+</body>
+</html>
