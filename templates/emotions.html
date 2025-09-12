@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Emotion Shift — SoulSync</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body { margin: 0; font-family: 'Segoe UI', sans-serif; background: #0b1220; color: #eaf2ff; }
+    header { padding: 16px 22px; position: sticky; top: 0; background: #0f1730; border-bottom: 1px solid rgba(255,255,255,0.08); }
+    h1 { margin: 0; font-size: 20px; }
+    .container { max-width: 1100px; margin: 0 auto; padding: 18px; }
+    .card { background: #121a2b; border: 1px solid rgba(255,255,255,0.08); border-radius: 14px; padding: 16px; }
+    .grid { display: grid; grid-template-columns: 2fr 1fr; gap: 14px; }
+    @media (max-width: 980px) { .grid { grid-template-columns: 1fr; } }
+    .muted { color: #8aa0c6; font-size: 13px; }
+    .row { display: flex; gap: 10px; align-items: center; }
+    .badge { background: #1c2740; padding: 6px 10px; border-radius: 999px; border: 1px solid rgba(255,255,255,0.08); }
+    a.btn { color: #eaf2ff; text-decoration: none; background: #1f2a44; padding: 8px 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.1); }
+    a.btn:hover { background: #2a3a5f; }
+    .list { margin-top: 10px; }
+    .li { display: grid; grid-template-columns: 1fr auto; gap: 8px; padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.06); }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="row">
+      <h1>Emotion Shift</h1>
+      <div style="flex:1"></div>
+      <a class="btn" href="/home">← Home</a>
+    </div>
+    <div class="muted">Track your emotions over time across conversations</div>
+  </header>
+
+  <div class="container">
+    <div class="grid">
+      <div class="card">
+        <canvas id="emotionChart" height="120"></canvas>
+      </div>
+      <div class="card">
+        <div class="row" style="justify-content:space-between;">
+          <div>
+            <div style="font-weight:700;">Recent Emotions</div>
+            <div class="muted">Last 20 entries</div>
+          </div>
+          <a class="btn" id="refresh">↻ Refresh</a>
+        </div>
+        <div id="summary" class="muted" style="margin-top:8px;"></div>
+        <div id="list" class="list"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const emotionPalette = {
+      Joy: '#69db7c',
+      Sadness: '#4dabf7',
+      Anger: '#ff6b6b',
+      Fear: '#ffd43b',
+      Love: '#b197fc',
+      Surprise: '#63e6be',
+      Neutral: '#8aa0c6'
+    };
+
+    // Map emotions to numeric scores for the chart (radar-like line)
+    const emotionScale = { Joy: 3, Love: 2, Surprise: 1, Neutral: 0, Fear: -1, Sadness: -2, Anger: -3 };
+
+    let chart;
+
+    async function fetchHistory() {
+      const res = await fetch('/emotion_history');
+      const data = await res.json();
+      return data;
+    }
+
+    function buildSeries(data) {
+      // Data sorted by ts
+      const items = data.slice().sort((a,b) => new Date(a.ts) - new Date(b.ts));
+      const labels = items.map(i => new Date(i.ts).toLocaleString());
+      const values = items.map(i => emotionScale[i.emotion] ?? 0);
+      const colors = items.map(i => emotionPalette[i.emotion] || '#8aa0c6');
+      return { labels, values, colors, items };
+    }
+
+    function renderList(items) {
+      const list = document.getElementById('list');
+      list.innerHTML = '';
+      const last = items.slice(-20).reverse();
+      last.forEach(i => {
+        const row = document.createElement('div');
+        row.className = 'li';
+        row.innerHTML = `<div><b>${i.emotion}</b> <span class="muted">(${(i.confidence*100).toFixed(0)}%)</span></div><div class="muted">${new Date(i.ts).toLocaleString()}</div>`;
+        list.appendChild(row);
+      });
+    }
+
+    function summarize(items) {
+      const counts = {};
+      items.forEach(i => counts[i.emotion] = (counts[i.emotion]||0) + 1);
+      const pairs = Object.entries(counts).sort((a,b) => b[1]-a[1]).slice(0,3);
+      const s = pairs.map(([k,v]) => `${k} (${v})`).join(', ');
+      document.getElementById('summary').textContent = pairs.length ? `Top emotions: ${s}` : 'No data yet.';
+    }
+
+    async function renderChart() {
+      const data = await fetchHistory();
+      const { labels, values, colors, items } = buildSeries(data);
+      summarize(items);
+      renderList(items);
+
+      const ctx = document.getElementById('emotionChart').getContext('2d');
+      if (chart) chart.destroy();
+      chart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels,
+          datasets: [{
+            label: 'Emotion Shift',
+            data: values,
+            fill: true,
+            backgroundColor: 'rgba(106, 227, 255, 0.08)',
+            borderColor: '#6ae3ff',
+            pointBackgroundColor: colors,
+            pointRadius: 4,
+            tension: 0.25
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                label: (ctx) => `Score: ${ctx.formattedValue}`
+              }
+            }
+          },
+          scales: {
+            y: {
+              min: -3, max: 3,
+              ticks: {
+                callback: (v) => {
+                  const map = { 3:'Joy', 2:'Love', 1:'Surprise', 0:'Neutral', '-1':'Fear', '-2':'Sadness', '-3':'Anger' };
+                  return map[v] ?? v;
+                }
+              }
+            }
+          }
+        }
+      });
+    }
+
+    document.getElementById('refresh').addEventListener('click', renderChart);
+    renderChart();
+  </script>
+</body>
+</html>
+

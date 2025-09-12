@@ -254,21 +254,59 @@
     const chatBox = document.getElementById("chat-box");
     let replyMode = "text";
 
-    // 🔹 Sentiment popup helper
-    function showSentimentPopup(sentiment) {
+    // 🔹 Emotion popup helper
+    function showEmotionPopup(emotion, confidence) {
+      const emotionEmojis = {
+        'joy': '😊', 'happiness': '😊', 'sadness': '😢', 'anger': '😠', 
+        'fear': '😨', 'love': '❤️', 'surprise': '😲', 'disgust': '🤢',
+        'gratitude': '🙏', 'anxiety': '😰', 'excitement': '🤩', 'neutral': '😐',
+        'caring': '🤗', 'confusion': '😕', 'curiosity': '🤔', 'disappointment': '😞',
+        'embarrassment': '😳', 'grief': '😭', 'nervousness': '😬', 'optimism': '😌',
+        'pride': '😌', 'relief': '😌', 'remorse': '😔'
+      };
+      
+      const emoji = emotionEmojis[emotion.toLowerCase()] || '😐';
       const popup = document.createElement("div");
-      popup.textContent = `🧠 Detected Emotion: ${sentiment}`;
+      popup.innerHTML = `
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span style="font-size: 20px;">${emoji}</span>
+          <div>
+            <div style="font-weight: bold;">Detected Emotion: ${emotion}</div>
+            <div style="font-size: 12px; opacity: 0.8;">Confidence: ${(confidence * 100).toFixed(1)}%</div>
+          </div>
+        </div>
+      `;
       popup.style.position = "fixed";
       popup.style.bottom = "20px";
       popup.style.right = "20px";
-      popup.style.background = "#333";
+      popup.style.background = "linear-gradient(135deg, #667eea 0%, #764ba2 100%)";
       popup.style.color = "#fff";
-      popup.style.padding = "10px 15px";
-      popup.style.borderRadius = "8px";
-      popup.style.boxShadow = "0 4px 12px rgba(0,0,0,0.3)";
+      popup.style.padding = "12px 16px";
+      popup.style.borderRadius = "12px";
+      popup.style.boxShadow = "0 8px 25px rgba(0,0,0,0.3)";
       popup.style.zIndex = "9999";
+      popup.style.fontSize = "14px";
+      popup.style.maxWidth = "250px";
+      popup.style.animation = "slideInRight 0.3s ease-out";
+      
+      // Add animation keyframes
+      if (!document.getElementById('emotion-popup-styles')) {
+        const style = document.createElement('style');
+        style.id = 'emotion-popup-styles';
+        style.textContent = `
+          @keyframes slideInRight {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+          }
+        `;
+        document.head.appendChild(style);
+      }
+      
       document.body.appendChild(popup);
-      setTimeout(() => popup.remove(), 4000); // auto-hide after 4s
+      setTimeout(() => {
+        popup.style.animation = "slideInRight 0.3s ease-out reverse";
+        setTimeout(() => popup.remove(), 300);
+      }, 4000); // auto-hide after 4s
     }
 
     // 🔹 Main send message flow
@@ -291,9 +329,9 @@
       chatBox.innerHTML += `<div class="bot-message">${data.reply}</div>`;
       chatBox.scrollTop = chatBox.scrollHeight;
 
-      // 🔹 Show sentiment popup
-      if (data.sentiment) {
-        showSentimentPopup(data.sentiment);
+      // 🔹 Show emotion popup
+      if (data.emotion) {
+        showEmotionPopup(data.emotion, data.confidence || 0.5);
       }
 
       if (replyMode === "voice") {

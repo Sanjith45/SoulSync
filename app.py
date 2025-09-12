@@ -8,6 +8,7 @@ import numpy as np
 import os
 from dotenv import load_dotenv
 import requests
+from datetime import datetime
 
 
 # 🌱 Load environment variables
@@ -173,10 +174,8 @@ def chat_page():
     return render_template("chat.html")
 
 
-from transformers import pipeline
-
-# ✅ Load sentiment analyzer once at startup (put this near other imports / globals)
-sentiment_analyzer = pipeline("sentiment-analysis")
+# ✅ Import emotion analyzer (GoEmotions-trained or fallback)
+from emotion_analyzer import analyze_emotion
 
 @app.route("/chat", methods=["POST"])
 def chat():
@@ -189,31 +188,48 @@ def chat():
     if not user_msg:
         return jsonify({"reply": "Please say something to begin."})
 
-    # 🧠 Run sentiment analysis on user message
-    sentiment_result = sentiment_analyzer(user_msg)[0]
-    sentiment_label = sentiment_result["label"]  # "POSITIVE" or "NEGATIVE"
-    sentiment_score = sentiment_result["score"]
+    # 🧠 Run emotion analysis on user message
+    emotion_result = analyze_emotion(user_msg)
+    emotion_label = emotion_result["emotion"]
+    emotion_confidence = emotion_result["confidence"]
 
     # 🧠 Fetch user and previous messages
     user_data = users.find_one({"name": user_id})
     nickname = user_data.get("nickname", "friend")
 
-    existing = chat_history.find_one({"user_id": user_id}) or {"messages": []}
-    messages = existing["messages"]
+    existing = chat_history.find_one({"user_id": user_id}) or {"messages": [], "emotions": []}
+    messages = existing.get("messages", [])
+    emotions = existing.get("emotions", [])
 
     # 👋 Greet on first message
     if len(messages) == 0:
         greeting = f"Hey {nickname}! 😊 It's nice to meet you. How are you feeling today?"
         messages.append({"role": "assistant", "content": greeting})
-        save_to_db(user_id, messages)
-        return jsonify({"reply": greeting, "sentiment": sentiment_label})
+        # Track initial detected emotion as a baseline point as well
+        emotions.append({
+            "ts": datetime.utcnow(),
+            "emotion": emotion_label,
+            "confidence": round(emotion_confidence, 2)
+        })
+        chat_history.update_one(
+            {"user_id": user_id},
+            {"$set": {"messages": messages, "emotions": emotions}},
+            upsert=True
+        )
+        return jsonify({"reply": greeting, "emotion": emotion_label, "confidence": emotion_confidence})
 
-    # 🧠 Store user message with sentiment
+    # 🧠 Store user message with emotion
     messages.append({
         "role": "user",
         "content": user_msg,
-        "sentiment": sentiment_label,
-        "confidence": round(sentiment_score, 2)
+        "emotion": emotion_label,
+        "confidence": round(emotion_confidence, 2)
+    })
+    # Store emotion history point
+    emotions.append({
+        "ts": datetime.utcnow(),
+        "emotion": emotion_label,
+        "confidence": round(emotion_confidence, 2)
     })
     user_vec = embedder.encode(user_msg)
     faiss_index.add(np.array([user_vec]))
@@ -237,7 +253,7 @@ def chat():
         f"Use a warm tone, be caring, and remember their emotional cues."
     )
 
-    # 🧹 Clean messages (remove unsupported fields like 'sentiment')
+    # 🧹 Clean messages (remove unsupported fields like 'emotion')
     def clean_msgs(msgs):
         return [
             {"role": m["role"], "content": m["content"]}
@@ -255,14 +271,45 @@ def chat():
 
     reply = response.choices[0].message.content.strip()
     messages.append({"role": "assistant", "content": reply})
-    save_to_db(user_id, messages)
+    chat_history.update_one(
+        {"user_id": user_id},
+        {"$set": {"messages": messages, "emotions": emotions}},
+        upsert=True
+    )
 
-    # ✅ Return both reply and sentiment
+    # ✅ Return both reply and emotion
     return jsonify({
         "reply": reply,
-        "sentiment": sentiment_label,
-        "confidence": round(sentiment_score, 2)
+        "emotion": emotion_label,
+        "confidence": round(emotion_confidence, 2)
     })
+
+
+# ========= 📈 Emotion Analytics =========
+@app.route("/emotions")
+def emotions_page():
+    if "user_id" not in session:
+        return redirect(url_for("login"))
+    return render_template("emotions.html")
+
+
+@app.route("/emotion_history")
+def emotion_history():
+    if "user_id" not in session:
+        return jsonify([])
+    user_id = session["user_id"]
+    existing = chat_history.find_one({"user_id": user_id}) or {"emotions": []}
+    data = existing.get("emotions", [])
+    # Serialize datetime to ISO
+    serialized = [
+        {
+            "ts": (e.get("ts").isoformat() + "Z") if isinstance(e.get("ts"), datetime) else e.get("ts"),
+            "emotion": e.get("emotion"),
+            "confidence": e.get("confidence", 0)
+        }
+        for e in data
+    ]
+    return jsonify(serialized)
 
 
 

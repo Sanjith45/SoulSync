@@ -1,0 +1,32 @@
+# SoulSync Mental Health Chatbot - Dependencies
+
+# Core Flask Framework
+Flask==2.3.3
+Werkzeug==2.3.7
+
+# Database
+pymongo==4.5.0
+
+# AI and Machine Learning
+openai==1.3.0
+sentence-transformers==2.2.2
+transformers==4.35.2
+torch==2.1.0
+scikit-learn==1.3.2
+joblib==1.3.2
+numpy==1.24.3
+faiss-cpu==1.7.4
+
+# Environment and Configuration
+python-dotenv==1.0.0
+
+# HTTP Requests
+requests==2.31.0
+
+# Data Processing
+pandas==2.1.3
+datasets==2.14.6
+
+# Optional: For better performance (uncomment if needed)
+# faiss-gpu==1.7.4  # Use this instead of faiss-cpu if you have CUDA
+# torch-gpu==2.1.0  # Use this instead of torch if you have CUDA
