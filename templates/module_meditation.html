@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Meditation — SoulSync</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body { margin:0; font-family:'Poppins', sans-serif; background: radial-gradient(800px 400px at 90% 0%, #e6fff8, transparent), linear-gradient(135deg, #eef7ff, #fff0f6); }
+    header { display:flex; align-items:center; gap:10px; padding:16px 22px; }
+    a.btn, button.btn { text-decoration:none; color:#fff; background:#0d9488; padding:10px 14px; border-radius:10px; border:none; cursor:pointer; }
+    .wrap { padding: 16px; display:grid; grid-template-columns: 1.2fr .8fr; gap:16px; }
+    @media (max-width: 980px) { .wrap { grid-template-columns:1fr; } }
+    .card { background:#fff; border-radius:16px; box-shadow:0 10px 30px rgba(0,0,0,0.08); padding:16px; }
+    .ring { width:160px; height:160px; border-radius:50%; border:8px solid rgba(13,148,136,.2); margin: 18px auto; display:grid; place-items:center; }
+    .dot { width:24px; height:24px; border-radius:50%; background:#0d9488; animation: breathe 6s ease-in-out infinite; }
+    @keyframes breathe { 0%,100%{ transform: scale(1) } 50%{ transform: scale(1.7) } }
+  </style>
+</head>
+<body>
+  <header>
+    <a class="btn" href="/explore">← Explore</a>
+    <div style="flex:1"></div>
+    <a class="btn" href="/mymodules">My Modules</a>
+  </header>
+  <div class="wrap">
+    <div class="card">
+      <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+        <label>Length
+          <select id="len">
+            <option value="60">60s</option>
+            <option value="180">3 min</option>
+            <option value="600">10 min</option>
+          </select>
+        </label>
+        <label>Style
+          <select id="style">
+            <option value="calm">Calm</option>
+            <option value="grounding">Grounding</option>
+            <option value="magical">Magical</option>
+          </select>
+        </label>
+        <button class="btn" id="start">Start</button>
+      </div>
+      <div class="ring"><div class="dot"></div></div>
+      <div id="script" style="white-space:pre-wrap; opacity:.9"></div>
+    </div>
+    <div class="card">
+      <div style="font-weight:600">Session</div>
+      <div id="meta" class="muted" style="margin-top:6px; opacity:.8">—</div>
+    </div>
+  </div>
+  <script>
+    async function start(){
+      const length = document.getElementById('len').value;
+      const style = document.getElementById('style').value;
+      const res = await fetch('/api/modules/meditation/generate', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ length, style }) });
+      const data = await res.json();
+      document.getElementById('script').textContent = data.scriptText;
+      document.getElementById('meta').textContent = data.title + ' — ' + length + 's';
+    }
+    document.getElementById('start').addEventListener('click', start);
+  </script>
+</body>
+</html>
+

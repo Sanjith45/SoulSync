@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>More — Create — SoulSync</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body { margin:0; font-family: 'Poppins', sans-serif; background: conic-gradient(from 180deg at 50% 50%, #fef6ff, #eefbff); min-height:100vh; display:flex; flex-direction:column; }
+    header { display:flex; align-items:center; gap:10px; padding:16px 22px; }
+    a.btn, button.btn { text-decoration:none; color:#fff; background:#6a0dad; padding:10px 14px; border-radius:10px; border:none; cursor:pointer; }
+    .container { flex:1; display:grid; grid-template-columns: 1.2fr .8fr; gap:16px; padding:16px; }
+    @media (max-width: 980px) { .container { grid-template-columns: 1fr; } }
+    .panel { background:#fff; border-radius:16px; box-shadow:0 10px 30px rgba(0,0,0,0.08); padding:16px; }
+    .input { width:100%; padding:14px; border-radius:12px; border:1px solid #e7dafe; font-size:16px; }
+    .placeholder { color:#8a5fbf; }
+    .orbs { display:flex; gap:10px; margin-top:12px; }
+    .orb { width:12px; height:12px; border-radius:50%; background: radial-gradient(circle at 30% 30%, #caa9ff, #6a0dad); animation: float 2.5s ease-in-out infinite; }
+    .orb:nth-child(2){ animation-delay:.5s; }
+    .orb:nth-child(3){ animation-delay:1s; }
+    @keyframes float { 0%,100%{ transform: translateY(0) } 50%{ transform: translateY(-6px) } }
+    pre { white-space: pre-wrap; word-wrap: break-word; background:#f9f4ff; padding:8px; border-radius:8px; max-height:50vh; overflow:auto; }
+  </style>
+</head>
+<body>
+  <header>
+    <a class="btn" href="/home">← Home</a>
+    <div style="flex:1"></div>
+    <a class="btn" href="/explore">Explore</a>
+    <a class="btn" href="/mymodules">My Modules</a>
+  </header>
+  <div class="container">
+    <div class="panel">
+      <div style="font-weight:600">Tell us anything you love, dream, or even imagine…</div>
+      <div class="orbs"><div class="orb"></div><div class="orb"></div><div class="orb"></div></div>
+      <div style="margin-top:10px">
+        <input id="input" class="input" placeholder="What makes you smile?" />
+      </div>
+      <div style="margin-top:10px; display:flex; gap:8px; flex-wrap:wrap;">
+        <button class="btn" id="generate">Create Module</button>
+        <button class="btn" id="play-bg">Play Soundscape</button>
+        <button class="btn" id="stop-bg">Stop Soundscape</button>
+      </div>
+    </div>
+    <div class="panel">
+      <div style="font-weight:600">Generated Module Spec</div>
+      <pre id="spec"></pre>
+    </div>
+  </div>
+  <script type="module">
+    import { Soundscape } from '/static/soundscapes.js';
+    const s = new Soundscape();
+    const input = document.getElementById('input');
+    const specBox = document.getElementById('spec');
+    document.getElementById('generate').addEventListener('click', async () => {
+      const res = await fetch('/api/modules/more/generate', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ input: input.value }) });
+      const data = await res.json();
+      specBox.textContent = JSON.stringify(data.spec || data, null, 2);
+      if (data.url) window.location.href = data.url;
+    });
+    document.getElementById('play-bg').addEventListener('click', async () => {
+      await s.play('/static/instant/calm-loop.mp3', 0.3);
+    });
+    document.getElementById('stop-bg').addEventListener('click', () => s.pause());
+  </script>
+</body>
+</html>
+

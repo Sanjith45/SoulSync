@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Onboarding — SoulSync</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body { margin:0; font-family: 'Poppins', sans-serif; background: radial-gradient(600px 300px at 80% 10%, #ffe6f7, transparent), linear-gradient(135deg, #ecfeff, #f7ecff); }
+    header { display:flex; align-items:center; gap:10px; padding:16px 22px; }
+    a.btn { text-decoration:none; color:#fff; background:#6a0dad; padding:10px 14px; border-radius:10px; }
+    .grid { display:grid; grid-template-columns: repeat(auto-fit, minmax(240px,1fr)); gap:14px; padding:16px; }
+    .card { background:white; border-radius:16px; padding:16px; box-shadow:0 10px 30px rgba(0,0,0,0.08); }
+    .choices { display:flex; gap:8px; flex-wrap:wrap; margin-top:8px; }
+    .chip { padding:8px 12px; background:#f2e9ff; color:#6a0dad; border-radius:999px; cursor:pointer; transition: transform .15s; }
+    .chip:hover { transform: translateY(-2px); }
+  </style>
+</head>
+<body>
+  <header>
+    <a class="btn" href="/home">← Home</a>
+    <div style="flex:1"></div>
+    <a class="btn" href="/explore">Explore</a>
+  </header>
+  <div class="grid">
+    <div class="card">
+      <div style="font-weight:600">Pick a color cloud</div>
+      <div class="choices" id="color-cloud">
+        <div class="chip" data-v="lavender">Lavender</div>
+        <div class="chip" data-v="aqua">Aqua</div>
+        <div class="chip" data-v="peach">Peach</div>
+        <div class="chip" data-v="mint">Mint</div>
+      </div>
+    </div>
+    <div class="card">
+      <div style="font-weight:600">Pick a sound</div>
+      <div class="choices" id="sound-choice">
+        <div class="chip" data-v="waves">Waves</div>
+        <div class="chip" data-v="piano">Piano</div>
+        <div class="chip" data-v="cafe">Cafe</div>
+        <div class="chip" data-v="beats">Beats</div>
+      </div>
+    </div>
+    <div class="card">
+      <div style="font-weight:600">Pick a tiny scene</div>
+      <div class="choices" id="scene-choice">
+        <div class="chip" data-v="forest">Forest</div>
+        <div class="chip" data-v="city">City Cafe</div>
+        <div class="chip" data-v="beach">Beach</div>
+        <div class="chip" data-v="mountain">Mountain</div>
+      </div>
+    </div>
+    <div class="card">
+      <div style="font-weight:600">Pick a self-care action</div>
+      <div class="choices" id="self-care">
+        <div class="chip" data-v="water">Sip water</div>
+        <div class="chip" data-v="stretch">Stretch</div>
+        <div class="chip" data-v="doodle">Doodle</div>
+        <div class="chip" data-v="breathe">Breathe</div>
+      </div>
+    </div>
+  </div>
+
+  <div style="padding:16px">
+    <a class="btn" id="save">Save</a>
+  </div>
+
+  <script>
+    const pick = (rootId) => {
+      const root = document.getElementById(rootId);
+      let selected = null;
+      root.querySelectorAll('.chip').forEach(ch => ch.addEventListener('click', () => {
+        root.querySelectorAll('.chip').forEach(c => c.style.outline = 'none');
+        ch.style.outline = '2px solid #6a0dad';
+        selected = ch.getAttribute('data-v');
+      }));
+      return () => selected;
+    };
+
+    const getColor = pick('color-cloud');
+    const getSound = pick('sound-choice');
+    const getScene = pick('scene-choice');
+    const getSelfCare = pick('self-care');
+
+    document.getElementById('save').addEventListener('click', async () => {
+      const payload = {
+        color_cloud: getColor(),
+        sound_choice: getSound(),
+        scene_choice: getScene(),
+        self_care: getSelfCare()
+      };
+      await fetch('/api/onboarding/submit', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+      alert('Preferences saved! 🎉');
+    });
+  </script>
+</body>
+</html>
+

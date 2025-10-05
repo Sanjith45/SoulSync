@@ -16,6 +16,8 @@ scikit-learn==1.3.2
 joblib==1.3.2
 numpy==1.24.3
 faiss-cpu==1.7.4
+# BERT for emotion analysis
+accelerate==0.24.1
 
 # Environment and Configuration
 python-dotenv==1.0.0

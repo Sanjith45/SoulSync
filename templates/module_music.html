@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Music Therapy — SoulSync</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body { margin:0; font-family:'Poppins', sans-serif; background: linear-gradient(120deg, #e9f7ff, #f7ecff); }
+    header { display:flex; align-items:center; gap:10px; padding:16px 22px; }
+    a.btn, button.btn { text-decoration:none; color:#fff; background:#6a0dad; padding:10px 14px; border-radius:10px; border:none; cursor:pointer; }
+    .wrap { padding: 16px; display:grid; grid-template-columns: 1.2fr .8fr; gap:16px; }
+    @media (max-width: 980px) { .wrap { grid-template-columns:1fr; } }
+    .card { background:#fff; border-radius:16px; box-shadow:0 10px 30px rgba(0,0,0,0.08); padding:16px; }
+    .chips { display:flex; gap:8px; flex-wrap:wrap; }
+    .chip { padding:6px 10px; background:#f2e9ff; color:#6a0dad; border-radius:999px; cursor:pointer; }
+    .viz { height: 120px; display:flex; align-items:flex-end; gap:4px; }
+    .bar { width:6px; background: linear-gradient(#6a0dad, #caa9ff); border-radius:4px; animation: bounce 1.2s ease-in-out infinite; }
+    .bar:nth-child(2){ animation-delay:.2s }
+    .bar:nth-child(3){ animation-delay:.4s }
+    .bar:nth-child(4){ animation-delay:.6s }
+    @keyframes bounce { 0%,100%{ height:20% } 50%{ height:90% } }
+  </style>
+</head>
+<body>
+  <header>
+    <a class="btn" href="/explore">← Explore</a>
+    <div style="flex:1"></div>
+    <a class="btn" href="/mymodules">My Modules</a>
+  </header>
+  <div class="wrap">
+    <div class="card">
+      <div style="display:flex; gap:8px; align-items:center;">
+        <button class="btn" id="play">▶ Play</button>
+        <button class="btn" id="pause">⏸ Pause</button>
+        <div style="flex:1"></div>
+        <div class="chips">
+          <div class="chip" data-m="calm">Calm</div>
+          <div class="chip" data-m="focus">Focus</div>
+          <div class="chip" data-m="sleep">Sleep</div>
+          <div class="chip" data-m="uplift">Uplift</div>
+        </div>
+      </div>
+      <div class="viz" style="margin-top:10px;">
+        <div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div>
+      </div>
+      <div style="margin-top:12px;">
+        <div>Mood before: <input type="range" id="before" min="0" max="10" value="5"></div>
+        <div>Mood after: <input type="range" id="after" min="0" max="10" value="6"></div>
+      </div>
+    </div>
+    <div class="card">
+      <div style="font-weight:600">Now Playing</div>
+      <div id="meta" style="margin-top:6px; opacity:.8">—</div>
+    </div>
+  </div>
+  <audio id="audio"></audio>
+  <script type="module">
+    import { Soundscape } from '/static/soundscapes.js';
+    const bg = new Soundscape();
+    const audio = document.getElementById('audio');
+    const meta = document.getElementById('meta');
+    let current = null;
+    async function load(mood='calm'){
+      const res = await fetch('/api/modules/music/recommend', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ currentMood: mood }) });
+      current = await res.json();
+      meta.textContent = current.title + ' — ' + (current.mood || '');
+      audio.src = (current.tracks && current.tracks[0] && current.tracks[0].url) || '';
+      // softly play background loop too
+      if (audio.src) { await bg.play(audio.src, 0.15); }
+    }
+    document.querySelectorAll('.chip').forEach(ch => ch.addEventListener('click', () => load(ch.getAttribute('data-m'))));
+    document.getElementById('play').addEventListener('click', () => audio.play());
+    document.getElementById('pause').addEventListener('click', () => { audio.pause(); bg.pause(); });
+    load();
+  </script>
+</body>
+</html>
+

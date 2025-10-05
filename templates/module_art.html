@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Art Therapy — SoulSync</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body { margin:0; font-family:'Poppins', sans-serif; background: linear-gradient(135deg, #fff7ed, #eff6ff); }
+    header { display:flex; align-items:center; gap:10px; padding:16px 22px; }
+    a.btn, button.btn { text-decoration:none; color:#fff; background:#ef4444; padding:10px 14px; border-radius:10px; border:none; cursor:pointer; }
+    .wrap { padding: 16px; display:grid; grid-template-columns: 1.2fr .8fr; gap:16px; }
+    @media (max-width: 980px) { .wrap { grid-template-columns:1fr; } }
+    .card { background:#fff; border-radius:16px; box-shadow:0 10px 30px rgba(0,0,0,0.08); padding:16px; }
+    canvas { width:100%; height:400px; background:#fff; border:1px dashed #ef4444; border-radius:12px; }
+    .tools { display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-bottom:8px; }
+  </style>
+</head>
+<body>
+  <header>
+    <a class="btn" href="/explore">← Explore</a>
+    <div style="flex:1"></div>
+    <a class="btn" href="/mymodules">My Modules</a>
+  </header>
+  <div class="wrap">
+    <div class="card">
+      <div class="tools">
+        <label>Brush <input id="size" type="range" min="1" max="30" value="6"></label>
+        <input id="color" type="color" value="#ef4444">
+        <button class="btn" id="clear">Clear</button>
+        <button class="btn" id="remix">Remix</button>
+      </div>
+      <canvas id="c"></canvas>
+    </div>
+    <div class="card">
+      <div style="font-weight:600">Generated / Reflection</div>
+      <div id="reflect" style="opacity:.85">This image looks like...</div>
+    </div>
+  </div>
+  <script>
+    const canvas = document.getElementById('c');
+    const ctx = canvas.getContext('2d');
+    let drawing = false; let last = null; let strokes = [];
+    function resize(){ canvas.width = canvas.clientWidth; canvas.height = 400; }
+    window.addEventListener('resize', resize); resize();
+    canvas.addEventListener('mousedown', e => { drawing = true; last = [e.offsetX, e.offsetY]; });
+    canvas.addEventListener('mouseup', () => drawing = false);
+    canvas.addEventListener('mouseleave', () => drawing = false);
+    canvas.addEventListener('mousemove', e => {
+      if(!drawing) return;
+      const size = parseInt(document.getElementById('size').value, 10);
+      const color = document.getElementById('color').value;
+      ctx.lineCap = 'round'; ctx.strokeStyle = color; ctx.lineWidth = size;
+      ctx.beginPath(); ctx.moveTo(last[0], last[1]); ctx.lineTo(e.offsetX, e.offsetY); ctx.stroke();
+      strokes.push({from:last, to:[e.offsetX, e.offsetY], color, size});
+      last = [e.offsetX, e.offsetY];
+    });
+    document.getElementById('clear').addEventListener('click', () => { ctx.clearRect(0,0,canvas.width,canvas.height); strokes=[]; });
+    document.getElementById('remix').addEventListener('click', async () => {
+      const res = await fetch('/api/modules/art/generate', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ styleHint:'dreamy', canvasStrokes: strokes }) });
+      const data = await res.json();
+      document.getElementById('reflect').textContent = 'Style: ' + (data.styleHint || '—');
+    });
+  </script>
+</body>
+</html>
+

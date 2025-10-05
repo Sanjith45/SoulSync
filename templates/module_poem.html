@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Poetic Therapy — SoulSync</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body { margin:0; font-family:'Poppins', sans-serif; background: radial-gradient(900px 450px at 10% 0%, #fff7ed, transparent), linear-gradient(135deg, #eef7ff, #f6ecff); }
+    header { display:flex; align-items:center; gap:10px; padding:16px 22px; }
+    a.btn, button.btn { text-decoration:none; color:#fff; background:#8b5cf6; padding:10px 14px; border-radius:10px; border:none; cursor:pointer; }
+    .wrap { padding: 16px; display:grid; grid-template-columns: 1.2fr .8fr; gap:16px; }
+    @media (max-width: 980px) { .wrap { grid-template-columns:1fr; } }
+    .card { background:#fff; border-radius:16px; box-shadow:0 10px 30px rgba(0,0,0,0.08); padding:16px; }
+    .poem { font-size:18px; line-height:1.6; animation: type 1s steps(40, end); white-space: pre-wrap; }
+    @keyframes type { from { width:0; } to { width:100%; } }
+  </style>
+</head>
+<body>
+  <header>
+    <a class="btn" href="/explore">← Explore</a>
+    <div style="flex:1"></div>
+    <a class="btn" href="/mymodules">My Modules</a>
+  </header>
+  <div class="wrap">
+    <div class="card">
+      <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+        <label>Tone
+          <select id="tone">
+            <option value="gentle">Gentle</option>
+            <option value="funny">Funny</option>
+            <option value="magical">Magical</option>
+            <option value="grounding">Grounding</option>
+          </select>
+        </label>
+        <button class="btn" id="gen">Generate</button>
+      </div>
+      <div id="text" class="poem" style="margin-top:10px; opacity:.95"></div>
+    </div>
+    <div class="card">
+      <div style="font-weight:600">Listen</div>
+      <button class="btn" id="speak">🔊 Speak</button>
+    </div>
+  </div>
+  <script>
+    let current = '';
+    async function generate(){
+      const tone = document.getElementById('tone').value;
+      const res = await fetch('/api/modules/poem/generate', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ tone }) });
+      const data = await res.json();
+      current = data.text || '';
+      document.getElementById('text').textContent = current;
+    }
+    document.getElementById('gen').addEventListener('click', generate);
+    document.getElementById('speak').addEventListener('click', () => {
+      if (!current) return; const u = new SpeechSynthesisUtterance(current); speechSynthesis.speak(u);
+    });
+    generate();
+  </script>
+</body>
+</html>
+

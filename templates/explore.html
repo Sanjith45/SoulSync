@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Explore — SoulSync</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body { margin:0; font-family: 'Poppins', sans-serif; background: radial-gradient(1200px 600px at 10% 10%, #f4e8ff, transparent), linear-gradient(135deg, #eef7ff, #fbf0ff); }
+    header { display:flex; align-items:center; gap:10px; padding:16px 22px; }
+    a.btn { text-decoration:none; color:#fff; background:#6a0dad; padding:10px 14px; border-radius:10px; }
+    .grid { display:grid; grid-template-columns: repeat(auto-fill, minmax(220px,1fr)); gap:14px; padding: 14px 18px; }
+    .card { background:white; border-radius:16px; padding:14px; box-shadow:0 10px 30px rgba(0,0,0,0.08); transition: transform .25s ease, box-shadow .25s ease; }
+    .card:hover { transform: translateY(-4px); box-shadow:0 14px 36px rgba(0,0,0,0.12); }
+    .title { font-weight:600; margin:6px 0 2px; }
+    .tag { display:inline-block; font-size:12px; background:#f2e9ff; color:#6a0dad; padding:4px 8px; border-radius:999px; margin-right:6px; }
+  </style>
+</head>
+<body>
+  <header>
+    <a class="btn" href="/home">← Home</a>
+    <div style="flex:1"></div>
+    <a class="btn" href="/mymodules">My Modules</a>
+    <a class="btn" href="/more">More (Create)</a>
+  </header>
+
+  <div class="grid">
+    {% for item in items %}
+    <div class="card">
+      <div class="title">{{ item.title or item.type|title }}</div>
+      <div>
+        {% if item.tags %}
+          {% for t in item.tags %}<span class="tag">{{ t }}</span>{% endfor %}
+        {% else %}
+          <span class="tag">{{ item.type }}</span>
+        {% endif %}
+      </div>
+      <div style="margin-top:8px; display:flex; gap:8px; flex-wrap:wrap;">
+        {% if item.type == 'music' %}
+          <a class="btn" href="/module/music">Try Now</a>
+        {% elif item.type == 'meditation' %}
+          <a class="btn" href="/module/meditation">Try Now</a>
+        {% elif item.type == 'art' %}
+          <a class="btn" href="/module/art">Try Now</a>
+        {% elif item.type == 'poem' %}
+          <a class="btn" href="/module/poem">Try Now</a>
+        {% else %}
+          <a class="btn" href="/more">Generate</a>
+        {% endif %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</body>
+</html>
+
